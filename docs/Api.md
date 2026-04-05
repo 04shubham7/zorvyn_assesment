@@ -18,26 +18,26 @@ Availability meaning used below:
 - Available: implemented and callable in the running backend.
 - Planned: defined in design docs but not yet implemented in code.
 
-Current status for this assignment docs: all routes are planned at the design stage.
+Current status for this assignment docs: Phase 2 and Phase 3 routes are available in the current backend.
 
 | Method | Route | Purpose | Allowed Roles | Availability |
 |---|---|---|---|---|
-| POST | /users | Create user | ADMIN | Planned |
-| GET | /users | List users | ADMIN | Planned |
-| GET | /users/:id | Get user details | ADMIN | Planned |
-| PATCH | /users/:id | Update user profile fields | ADMIN | Planned |
-| PATCH | /users/:id/role | Assign or change role | ADMIN | Planned |
-| PATCH | /users/:id/status | Set active or inactive status | ADMIN | Planned |
-| DELETE | /users/:id | Delete user | ADMIN | Planned |
-| POST | /transactions | Create transaction | ANALYST, ADMIN | Planned |
-| GET | /transactions | List transactions with filters | ANALYST, ADMIN | Planned |
-| GET | /transactions/:id | Get single transaction | ANALYST, ADMIN | Planned |
-| PATCH | /transactions/:id | Update transaction (partial) | ANALYST, ADMIN | Planned |
-| DELETE | /transactions/:id | Delete transaction | ADMIN | Planned |
-| GET | /dashboard/summary | Summary KPIs | VIEWER, ANALYST, ADMIN | Planned |
-| GET | /dashboard/category-totals | Totals grouped by category | VIEWER, ANALYST, ADMIN | Planned |
-| GET | /dashboard/recent-activity | Latest financial activity feed | VIEWER, ANALYST, ADMIN | Planned |
-| GET | /dashboard/trends | Time-series trend data | VIEWER, ANALYST, ADMIN | Planned |
+| POST | /users | Create user | ADMIN | Available |
+| GET | /users | List users | ADMIN | Available |
+| GET | /users/:id | Get user details | ADMIN | Available |
+| PATCH | /users/:id | Update user profile fields | ADMIN | Available |
+| PATCH | /users/:id/role | Assign or change role | ADMIN | Available |
+| PATCH | /users/:id/status | Set active or inactive status | ADMIN | Available |
+| DELETE | /users/:id | Delete user | ADMIN | Available |
+| POST | /transactions | Create transaction | ANALYST, ADMIN | Available |
+| GET | /transactions | List transactions with filters | ANALYST, ADMIN | Available |
+| GET | /transactions/:id | Get single transaction | ANALYST, ADMIN | Available |
+| PATCH | /transactions/:id | Update transaction (partial) | ANALYST, ADMIN | Available |
+| DELETE | /transactions/:id | Delete transaction | ADMIN | Available |
+| GET | /dashboard/summary | Summary KPIs | VIEWER, ANALYST, ADMIN | Available |
+| GET | /dashboard/category-totals | Totals grouped by category | VIEWER, ANALYST, ADMIN | Available |
+| GET | /dashboard/recent-activity | Latest financial activity feed | VIEWER, ANALYST, ADMIN | Available |
+| GET | /dashboard/trends | Time-series trend data | VIEWER, ANALYST, ADMIN | Available |
 
 ## 4) Detailed API Contracts
 
@@ -305,19 +305,19 @@ Monthly, weekly, or daily trends.
 
 | Method | Route | Roles | Request (Req) | Success Response | Error Responses | Availability |
 |---|---|---|---|---|---|---|
-| POST | /users | ADMIN | Body: name, email, role, status? | 201 Created + user object | 400, 401, 403, 409, 500 | Planned |
-| GET | /users | ADMIN | Query: role?, status?, page?, pageSize? | 200 OK + users[] + pagination meta | 400, 401, 403, 500 | Planned |
-| GET | /users/:id | ADMIN | Path: id | 200 OK + user object | 401, 403, 404, 500 | Planned |
-| PATCH | /users/:id | ADMIN | Path: id, Body(any): name/email | 200 OK + updated user object | 400, 401, 403, 404, 409, 500 | Planned |
-| PATCH | /users/:id/role | ADMIN | Path: id, Body: role | 200 OK + role update result | 400, 401, 403, 404, 500 | Planned |
-| PATCH | /users/:id/status | ADMIN | Path: id, Body: status | 200 OK + status update result | 400, 401, 403, 404, 500 | Planned |
-| DELETE | /users/:id | ADMIN | Path: id | 204 No Content | 401, 403, 404, 500 | Planned |
-| POST | /transactions | ANALYST, ADMIN | Body: type, amount, category, date, notes? | 201 Created + transaction object | 400, 401, 403, 500 | Planned |
-| GET | /transactions | ANALYST, ADMIN | Query: type?, category?, date range, amount range, page?, pageSize? | 200 OK + transactions[] + pagination meta | 400, 401, 500 | Planned |
-| GET | /transactions/:id | ANALYST, ADMIN | Path: id | 200 OK + transaction object | 401, 404, 500 | Planned |
-| PATCH | /transactions/:id | ANALYST, ADMIN | Path: id, Body(any): type/amount/category/date/notes | 200 OK + updated transaction object | 400, 401, 403, 404, 500 | Planned |
-| DELETE | /transactions/:id | ADMIN | Path: id | 204 No Content | 401, 403, 404, 500 | Planned |
-| GET | /dashboard/summary | VIEWER, ANALYST, ADMIN | Query: startDate?, endDate?, category? | 200 OK + income/expense/net/count | 400, 401, 500 | Planned |
-| GET | /dashboard/category-totals | VIEWER, ANALYST, ADMIN | Query: type?, startDate?, endDate? | 200 OK + grouped category totals | 400, 401, 500 | Planned |
-| GET | /dashboard/recent-activity | VIEWER, ANALYST, ADMIN | Query: limit?, type? | 200 OK + recent transactions | 400, 401, 500 | Planned |
-| GET | /dashboard/trends | VIEWER, ANALYST, ADMIN | Query: interval, startDate, endDate, type? | 200 OK + trend buckets | 400, 401, 500 | Planned |
+| POST | /users | ADMIN | Body: name, email, role, status? | 201 Created + user object | 400, 401, 403, 409, 500 | Available |
+| GET | /users | ADMIN | Query: role?, status?, page?, pageSize? | 200 OK + users[] + pagination meta | 400, 401, 403, 500 | Available |
+| GET | /users/:id | ADMIN | Path: id | 200 OK + user object | 401, 403, 404, 500 | Available |
+| PATCH | /users/:id | ADMIN | Path: id, Body(any): name/email | 200 OK + updated user object | 400, 401, 403, 404, 409, 500 | Available |
+| PATCH | /users/:id/role | ADMIN | Path: id, Body: role | 200 OK + role update result | 400, 401, 403, 404, 500 | Available |
+| PATCH | /users/:id/status | ADMIN | Path: id, Body: status | 200 OK + status update result | 400, 401, 403, 404, 500 | Available |
+| DELETE | /users/:id | ADMIN | Path: id | 204 No Content | 401, 403, 404, 500 | Available |
+| POST | /transactions | ANALYST, ADMIN | Body: type, amount, category, date, notes? | 201 Created + transaction object | 400, 401, 403, 500 | Available |
+| GET | /transactions | ANALYST, ADMIN | Query: type?, category?, date range, amount range, page?, pageSize? | 200 OK + transactions[] + pagination meta | 400, 401, 500 | Available |
+| GET | /transactions/:id | ANALYST, ADMIN | Path: id | 200 OK + transaction object | 401, 404, 500 | Available |
+| PATCH | /transactions/:id | ANALYST, ADMIN | Path: id, Body(any): type/amount/category/date/notes | 200 OK + updated transaction object | 400, 401, 403, 404, 500 | Available |
+| DELETE | /transactions/:id | ADMIN | Path: id | 204 No Content | 401, 403, 404, 500 | Available |
+| GET | /dashboard/summary | VIEWER, ANALYST, ADMIN | Query: startDate?, endDate?, category? | 200 OK + income/expense/net/count | 400, 401, 500 | Available |
+| GET | /dashboard/category-totals | VIEWER, ANALYST, ADMIN | Query: type?, startDate?, endDate? | 200 OK + grouped category totals | 400, 401, 500 | Available |
+| GET | /dashboard/recent-activity | VIEWER, ANALYST, ADMIN | Query: limit?, type? | 200 OK + recent transactions | 400, 401, 500 | Available |
+| GET | /dashboard/trends | VIEWER, ANALYST, ADMIN | Query: interval, startDate, endDate, type? | 200 OK + trend buckets | 400, 401, 500 | Available |

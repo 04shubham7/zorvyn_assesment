@@ -11,17 +11,24 @@ This is intentionally not production-scale infrastructure work. The quality targ
 
 ## 2) Functional Scope
 - RBAC with 3 roles:
-  - Viewer: read-only access to transactions and dashboard summaries.
-  - Analyst: read + create/update transactions; no user/permission management.
-  - Admin: full access including delete and management capabilities.
+  - Viewer: read-only dashboard analytics (no transaction management).
+  - Analyst: Viewer + create/read/update financial records (no user/delete).
+  - Admin: Analyst + delete records + full user/role/status management.
+- User and Role Management:
+  - Create, list, update user details.
+  - Assign or change user roles.
+  - Set user status (ACTIVE/INACTIVE).
+  - Delete users.
 - Financial Transactions:
-  - Full CRUD.
+  - Full CRUD (create, read, update, delete).
   - Type: income/expense.
-  - Filtering and pagination.
+  - Filtering by date, category, amount, and type.
+  - Pagination and sorting.
 - Dashboard Aggregations:
-  - Net balance.
-  - Category totals.
-  - Time trends (daily/weekly/monthly).
+  - Summary KPIs (total income, total expense, net balance, transaction count).
+  - Category-wise totals grouped by type.
+  - Recent activity feed (latest transactions).
+  - Time trends (daily/weekly/monthly bucketing).
 - Input validation and structured error handling.
 
 ## 3) Non-Functional Priorities
@@ -44,6 +51,7 @@ This is intentionally not production-scale infrastructure work. The quality targ
 - name
 - email (unique)
 - role (enum: VIEWER, ANALYST, ADMIN)
+- status (enum: ACTIVE, INACTIVE; default ACTIVE)
 - created_at, updated_at
 
 ### Transaction
@@ -52,8 +60,8 @@ This is intentionally not production-scale infrastructure work. The quality targ
 - type (enum: INCOME, EXPENSE)
 - amount (decimal > 0)
 - category (string or FK to categories table)
-- description (optional string)
-- transaction_date (date)
+- notes (optional string)
+- date (ISO date)
 - created_at, updated_at
 
 ### Optional: Category
@@ -84,20 +92,27 @@ This is intentionally not production-scale infrastructure work. The quality targ
   - server.(ts|js)
 
 ## 6) RBAC Rules Matrix
-- Viewer:
-  - GET /transactions
-  - GET /transactions/:id
+- Viewer (read-only dashboard):
   - GET /dashboard/summary
   - GET /dashboard/category-totals
+  - GET /dashboard/recent-activity
   - GET /dashboard/trends
-- Analyst:
+- Analyst (Viewer + financial operations):
   - all Viewer permissions
   - POST /transactions
+  - GET /transactions
+  - GET /transactions/:id
   - PATCH /transactions/:id
-- Admin:
+- Admin (full system access):
   - all Analyst permissions
   - DELETE /transactions/:id
-  - user/role administration endpoints (if included)
+  - POST /users
+  - GET /users
+  - GET /users/:id
+  - PATCH /users/:id
+  - PATCH /users/:id/role
+  - PATCH /users/:id/status
+  - DELETE /users/:id
 
 ## 7) Response and Error Standard
 ### Success (example)
@@ -134,33 +149,64 @@ This is intentionally not production-scale infrastructure work. The quality targ
 - All aggregations must honor applied filters (date range, category, type, etc.).
 
 ## 10) Delivery Phases
-### Phase 1 - Foundation
-- Bootstrap project structure.
-- DB schema + migrations.
-- Shared error and validation utilities.
-- Authentication context and role middleware.
+### Phase 1 - Foundation (Core Infrastructure)
+**Deliverables:**
+- Project structure (folder layout, package management).
+- Database initialization (schema for users, transactions).
+- Migrations or schema setup scripts.
+- Error handling module (structured error types and responses).
+- Input validation utilities (schemas, composable validators).
+- JWT/token authentication context.
+- RBAC middleware (role-based access control).
+- Base controller/service layer skeleton.
+**Outcome:** Complete backend skeleton with auth and middleware in place, no business logic yet.
 
-### Phase 2 - Transactions Module
-- CRUD endpoints.
-- Filtering, sorting, pagination.
-- Transaction service + repository tests.
+### Phase 2 - Transactions & User Management Modules
+**Deliverables:**
+- User management (POST, GET, GET/:id, PATCH, PATCH/:id/role, PATCH/:id/status, DELETE).
+- User service layer (validation, role assignment, status management).
+- Transaction CRUD endpoints (POST, GET, GET/:id, PATCH, DELETE).
+- Filtering (type, category, date range, amount range).
+- Sorting and pagination.
+- Transaction + User service tests.
+**Outcome:** Full CRUD + management endpoints working with correct RBAC enforcement.
 
 ### Phase 3 - Dashboard Module
-- Summary endpoint.
-- Category totals endpoint.
-- Trends endpoint.
-- Query optimization for grouped reads.
+**Deliverables:**
+- GET /dashboard/summary (KPIs: income, expense, net, count).
+- GET /dashboard/category-totals (grouped by category and type).
+- GET /dashboard/recent-activity (latest transactions feed).
+- GET /dashboard/trends (bucketed by day/week/month with income/expense/net).
+- Query optimization for grouped reads (indexes, efficient aggregations).
+**Outcome:** Complete dashboard analytics with correct aggregation logic and filter support.
 
-### Phase 4 - Hardening
-- Edge case validation.
-- Unified error mapping.
-- API docs and flow diagrams.
+### Phase 4 - Hardening & Documentation
+**Deliverables:**
+- Edge case validation (inactive users, invalid date ranges, etc.).
+- Unified error mapping (consistent error codes and messages across all endpoints).
+- Comprehensive README (setup, API overview, assumptions, tradeoffs).
+- Optional: unit/integration tests for critical paths.
+- Optional: Postman collection or OpenAPI spec.
+**Outcome:** Production-ready documentation, edge case handling, and test coverage.
 
 ## 11) Acceptance Checklist
-- RBAC works for all role tiers.
-- CRUD is complete and permission-gated.
-- Filters are correct and composable.
-- Aggregation outputs are accurate.
-- Validation rejects malformed payloads.
-- Errors are consistent and structured.
-- Codebase is modular with clear boundaries.
+- ✓ RBAC works for all role tiers (Viewer, Analyst, Admin).
+- ✓ User management endpoints are functional (create, list, update role/status, delete).
+- ✓ Transaction CRUD is complete and permission-gated.
+- ✓ Filters are correct and composable (date, category, type, amount, status).
+- ✓ Aggregation outputs are accurate (net balance, category totals, trends, recent activity).
+- ✓ Validation rejects malformed payloads with structured error details.
+- ✓ Errors are consistent and structured (success/error envelopes, codes, messages).
+- ✓ Codebase is modular with clear boundaries (routes, controllers, services, repositories).
+- ✓ Inactive users cannot access protected endpoints.
+- ✓ Documentation is clear (README, API contract, architecture overview).
+
+## 12) Tech Stack Recommendation (Phase 1 Bootstrap)
+For this assignment, recommend one of:
+- **Node.js + Express + TypeScript** (recommended for rapid development, strong typing)
+- **Node.js + Fastify + TypeScript** (performance-oriented alternative)
+- **Python + Flask/FastAPI** (simpler syntax, strong validation frameworks)
+
+Database: SQLite (easy, no setup) or PostgreSQL (recommended for production-like feel).
+
+Once tech stack is confirmed, Phase 1 bootstrap will generate all foundation files.
