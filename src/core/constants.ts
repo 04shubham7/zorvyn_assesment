@@ -1,0 +1,36 @@
+/**
+ * Application constants
+ */
+
+export const APP_CONSTANTS = {
+  // Pagination
+  DEFAULT_PAGE_SIZE: 20,
+  MAX_PAGE_SIZE: 100,
+  MIN_PAGE_SIZE: 1,
+
+  // JWT
+  JWT_EXPIRY: process.env.JWT_EXPIRY || '7d',
+
+  // Transaction
+  MIN_AMOUNT: 0.01,
+  AMOUNT_DECIMAL_PLACES: 2,
+
+  // Date ranges
+  MAX_DATE_RANGE_DAYS: 365,
+
+  // Limits
+  MAX_RECENT_ACTIVITY_LIMIT: 50,
+  DEFAULT_RECENT_ACTIVITY_LIMIT: 10,
+};
+
+export const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  NO_CONTENT: 204,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  INTERNAL_ERROR: 500,
+};
