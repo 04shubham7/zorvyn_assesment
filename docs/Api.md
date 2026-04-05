@@ -8,9 +8,9 @@
 - Monetary values: decimal with fixed precision (e.g., 2 decimals)
 
 ## 2) RBAC Overview
-- VIEWER: read-only on transactions + dashboard analytics
-- ANALYST: VIEWER + create/update transactions
-- ADMIN: ANALYST + delete transactions + admin-only endpoints
+- VIEWER: read-only dashboard access only
+- ANALYST: VIEWER + create/read/update financial records
+- ADMIN: ANALYST + delete records + full user/role/status management
 
 ## 3) Route Availability Summary
 
@@ -22,18 +22,26 @@ Current status for this assignment docs: all routes are planned at the design st
 
 | Method | Route | Purpose | Allowed Roles | Availability |
 |---|---|---|---|---|
+| POST | /users | Create user | ADMIN | Planned |
+| GET | /users | List users | ADMIN | Planned |
+| GET | /users/:id | Get user details | ADMIN | Planned |
+| PATCH | /users/:id | Update user profile fields | ADMIN | Planned |
+| PATCH | /users/:id/role | Assign or change role | ADMIN | Planned |
+| PATCH | /users/:id/status | Set active or inactive status | ADMIN | Planned |
+| DELETE | /users/:id | Delete user | ADMIN | Planned |
 | POST | /transactions | Create transaction | ANALYST, ADMIN | Planned |
-| GET | /transactions | List transactions with filters | VIEWER, ANALYST, ADMIN | Planned |
-| GET | /transactions/:id | Get single transaction | VIEWER, ANALYST, ADMIN | Planned |
+| GET | /transactions | List transactions with filters | ANALYST, ADMIN | Planned |
+| GET | /transactions/:id | Get single transaction | ANALYST, ADMIN | Planned |
 | PATCH | /transactions/:id | Update transaction (partial) | ANALYST, ADMIN | Planned |
 | DELETE | /transactions/:id | Delete transaction | ADMIN | Planned |
 | GET | /dashboard/summary | Summary KPIs | VIEWER, ANALYST, ADMIN | Planned |
 | GET | /dashboard/category-totals | Totals grouped by category | VIEWER, ANALYST, ADMIN | Planned |
+| GET | /dashboard/recent-activity | Latest financial activity feed | VIEWER, ANALYST, ADMIN | Planned |
 | GET | /dashboard/trends | Time-series trend data | VIEWER, ANALYST, ADMIN | Planned |
 
 ## 4) Detailed API Contracts
 
-Common request headers for all endpoints:
+Common request headers for protected endpoints:
 - Authorization: Bearer <JWT>
 - Content-Type: application/json (for POST/PATCH)
 
@@ -58,7 +66,77 @@ Common error envelope:
 }
 ```
 
-### 4.1 Transactions
+### 4.1 User and Role Management
+
+#### POST /users
+Create user.
+- Roles: ADMIN
+- Request body:
+  - name: string
+  - email: string (unique, valid email)
+  - role: VIEWER | ANALYST | ADMIN
+  - status?: ACTIVE | INACTIVE (default ACTIVE)
+- Success response (201): created user object
+- Error responses: 400, 401, 403, 409, 500
+
+#### GET /users
+List users.
+- Roles: ADMIN
+- Query params:
+  - role?: VIEWER | ANALYST | ADMIN
+  - status?: ACTIVE | INACTIVE
+  - page?: number (default 1)
+  - pageSize?: number (default 20, max 100)
+- Success response (200): users[] + pagination meta
+- Error responses: 400, 401, 403, 500
+
+#### GET /users/:id
+Get user details.
+- Roles: ADMIN
+- Path params:
+  - id: UUID
+- Success response (200): user object
+- Error responses: 401, 403, 404, 500
+
+#### PATCH /users/:id
+Update user profile fields.
+- Roles: ADMIN
+- Path params:
+  - id: UUID
+- Request body (any subset):
+  - name, email
+- Success response (200): updated user object
+- Error responses: 400, 401, 403, 404, 409, 500
+
+#### PATCH /users/:id/role
+Assign or change user role.
+- Roles: ADMIN
+- Path params:
+  - id: UUID
+- Request body:
+  - role: VIEWER | ANALYST | ADMIN
+- Success response (200): role update result
+- Error responses: 400, 401, 403, 404, 500
+
+#### PATCH /users/:id/status
+Set user status.
+- Roles: ADMIN
+- Path params:
+  - id: UUID
+- Request body:
+  - status: ACTIVE | INACTIVE
+- Success response (200): status update result
+- Error responses: 400, 401, 403, 404, 500
+
+#### DELETE /users/:id
+Delete user (or soft-delete by policy).
+- Roles: ADMIN
+- Path params:
+  - id: UUID
+- Success response (204): no body
+- Error responses: 401, 403, 404, 500
+
+### 4.2 Financial Records (Transactions)
 
 #### POST /transactions
 Create transaction.
@@ -67,112 +145,33 @@ Create transaction.
   - type: INCOME | EXPENSE
   - amount: number (>0)
   - category: string
-  - description?: string
-  - transactionDate: string (ISO date)
-- Request example:
-```json
-{
-  "type": "EXPENSE",
-  "amount": 1250.50,
-  "category": "Rent",
-  "description": "April rent",
-  "transactionDate": "2026-04-01"
-}
-```
-- Success response (201):
-```json
-{
-  "success": true,
-  "data": {
-    "id": "2f4f3b5d-702d-4e8d-9d23-0ab8bd8ea10f",
-    "userId": "73027adf-c49f-45f5-8f95-a8f49cc8a409",
-    "type": "EXPENSE",
-    "amount": 1250.50,
-    "category": "Rent",
-    "description": "April rent",
-    "transactionDate": "2026-04-01",
-    "createdAt": "2026-04-05T10:12:33Z",
-    "updatedAt": "2026-04-05T10:12:33Z"
-  }
-}
-```
-- Error responses:
-  - 400 VALIDATION_ERROR
-  - 401 UNAUTHORIZED
-  - 403 FORBIDDEN
-  - 500 INTERNAL_ERROR
+  - date: string (ISO date)
+  - notes?: string
+- Success response (201): created transaction object
+- Error responses: 400, 401, 403, 500
 
 #### GET /transactions
 List transactions with filtering.
-- Roles: VIEWER, ANALYST, ADMIN
+- Roles: ANALYST, ADMIN
 - Query params:
   - type?: INCOME | EXPENSE
   - category?: string
-  - minAmount?: number
-  - maxAmount?: number
   - startDate?: ISO date
   - endDate?: ISO date
-  - sortBy?: transactionDate | amount | createdAt
-  - sortOrder?: asc | desc
-  - page?: number (default 1)
-  - pageSize?: number (default 20, max 100)
-- Request example:
-  - GET /api/v1/transactions?type=EXPENSE&startDate=2026-04-01&endDate=2026-04-30&page=1&pageSize=20
-- Success response (200):
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "2f4f3b5d-702d-4e8d-9d23-0ab8bd8ea10f",
-      "type": "EXPENSE",
-      "amount": 1250.50,
-      "category": "Rent",
-      "description": "April rent",
-      "transactionDate": "2026-04-01"
-    }
-  ],
-  "meta": {
-    "page": 1,
-    "pageSize": 20,
-    "total": 1,
-    "totalPages": 1,
-    "filters": {
-      "type": "EXPENSE",
-      "startDate": "2026-04-01",
-      "endDate": "2026-04-30"
-    }
-  }
-}
-```
-- Error responses:
-  - 400 VALIDATION_ERROR
-  - 401 UNAUTHORIZED
-  - 500 INTERNAL_ERROR
+  - minAmount?: number
+  - maxAmount?: number
+  - page?: number
+  - pageSize?: number
+- Success response (200): transactions[] + pagination meta
+- Error responses: 400, 401, 500
 
 #### GET /transactions/:id
 Get transaction by id.
-- Roles: VIEWER, ANALYST, ADMIN
+- Roles: ANALYST, ADMIN
 - Path params:
   - id: UUID
-- Success response (200):
-```json
-{
-  "success": true,
-  "data": {
-    "id": "2f4f3b5d-702d-4e8d-9d23-0ab8bd8ea10f",
-    "type": "EXPENSE",
-    "amount": 1250.50,
-    "category": "Rent",
-    "description": "April rent",
-    "transactionDate": "2026-04-01"
-  }
-}
-```
-- Error responses:
-  - 401 UNAUTHORIZED
-  - 404 NOT_FOUND
-  - 500 INTERNAL_ERROR
+- Success response (200): transaction object
+- Error responses: 401, 404, 500
 
 #### PATCH /transactions/:id
 Partial update transaction.
@@ -180,158 +179,56 @@ Partial update transaction.
 - Path params:
   - id: UUID
 - Request body (any subset):
-  - type, amount, category, description, transactionDate
-- Request example:
-```json
-{
-  "amount": 1300,
-  "description": "Rent adjusted"
-}
-```
-- Success response (200):
-```json
-{
-  "success": true,
-  "data": {
-    "id": "2f4f3b5d-702d-4e8d-9d23-0ab8bd8ea10f",
-    "type": "EXPENSE",
-    "amount": 1300,
-    "category": "Rent",
-    "description": "Rent adjusted",
-    "transactionDate": "2026-04-01",
-    "updatedAt": "2026-04-05T10:55:02Z"
-  }
-}
-```
-- Error responses:
-  - 400 VALIDATION_ERROR
-  - 401 UNAUTHORIZED
-  - 403 FORBIDDEN
-  - 404 NOT_FOUND
-  - 500 INTERNAL_ERROR
+  - type, amount, category, date, notes
+- Success response (200): updated transaction object
+- Error responses: 400, 401, 403, 404, 500
 
 #### DELETE /transactions/:id
 Delete transaction.
 - Roles: ADMIN
 - Path params:
   - id: UUID
-- Success response (204):
-  - No response body.
-- Error responses:
-  - 401 UNAUTHORIZED
-  - 403 FORBIDDEN
-  - 404 NOT_FOUND
-  - 500 INTERNAL_ERROR
+- Success response (204): no body
+- Error responses: 401, 403, 404, 500
 
-### 4.2 Dashboard Aggregations
+### 4.3 Dashboard Summary APIs
 
 #### GET /dashboard/summary
-Overall dashboard KPIs.
+Overall KPIs.
 - Roles: VIEWER, ANALYST, ADMIN
-- Query params (optional filters):
-  - startDate, endDate, category
-- Success response (200):
-```json
-{
-  "success": true,
-  "data": {
-    "totalIncome": 12000,
-    "totalExpense": 5500.5,
-    "netBalance": 6499.5,
-    "transactionCount": 43
-  },
-  "meta": {
-    "filters": {
-      "startDate": "2026-04-01",
-      "endDate": "2026-04-30",
-      "category": null
-    }
-  }
-}
-```
-- Error responses:
-  - 400 VALIDATION_ERROR
-  - 401 UNAUTHORIZED
-  - 500 INTERNAL_ERROR
+- Query params: startDate?, endDate?, category?
+- Success response (200): totalIncome, totalExpense, netBalance, transactionCount
+- Error responses: 400, 401, 500
 
 #### GET /dashboard/category-totals
-Grouped totals by category.
+Category-wise totals.
 - Roles: VIEWER, ANALYST, ADMIN
-- Query params:
-  - type?: INCOME | EXPENSE
-  - startDate?: ISO date
-  - endDate?: ISO date
-- Success response (200):
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "category": "Salary",
-      "type": "INCOME",
-      "totalAmount": 8000,
-      "count": 2
-    },
-    {
-      "category": "Rent",
-      "type": "EXPENSE",
-      "totalAmount": 2500,
-      "count": 2
-    }
-  ]
-}
-```
-- Error responses:
-  - 400 VALIDATION_ERROR
-  - 401 UNAUTHORIZED
-  - 500 INTERNAL_ERROR
+- Query params: type?, startDate?, endDate?
+- Success response (200): [{ category, type, totalAmount, count }]
+- Error responses: 400, 401, 500
+
+#### GET /dashboard/recent-activity
+Recent financial activity feed.
+- Roles: VIEWER, ANALYST, ADMIN
+- Query params: limit?, type?
+- Success response (200): latest transactions sorted by createdAt desc
+- Error responses: 400, 401, 500
 
 #### GET /dashboard/trends
-Time-series trend for charting.
+Monthly, weekly, or daily trends.
 - Roles: VIEWER, ANALYST, ADMIN
 - Query params:
   - interval: day | week | month
   - startDate: ISO date
   - endDate: ISO date
   - type?: INCOME | EXPENSE
-- Success response (200):
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "periodStart": "2026-04-01",
-      "incomeTotal": 3000,
-      "expenseTotal": 1200,
-      "net": 1800
-    },
-    {
-      "periodStart": "2026-04-02",
-      "incomeTotal": 0,
-      "expenseTotal": 300,
-      "net": -300
-    }
-  ],
-  "meta": {
-    "interval": "day"
-  }
-}
-```
-- Error responses:
-  - 400 VALIDATION_ERROR
-  - 401 UNAUTHORIZED
-  - 500 INTERNAL_ERROR
+- Success response (200): [{ periodStart, incomeTotal, expenseTotal, net }]
+- Error responses: 400, 401, 500
 
 ## 5) Example Error Schemas
 
-### Success
-{
-  "success": true,
-  "data": {},
-  "meta": {}
-}
-
 ### Validation Error (400)
+```json
 {
   "success": false,
   "error": {
@@ -342,8 +239,10 @@ Time-series trend for charting.
     ]
   }
 }
+```
 
 ### Unauthorized (401)
+```json
 {
   "success": false,
   "error": {
@@ -351,8 +250,10 @@ Time-series trend for charting.
     "message": "Missing or invalid authentication token"
   }
 }
+```
 
 ### Forbidden (403)
+```json
 {
   "success": false,
   "error": {
@@ -360,17 +261,21 @@ Time-series trend for charting.
     "message": "Insufficient role permission"
   }
 }
+```
 
 ### Not Found (404)
+```json
 {
   "success": false,
   "error": {
     "code": "NOT_FOUND",
-    "message": "Transaction not found"
+    "message": "Requested resource not found"
   }
 }
+```
 
 ### Internal Error (500)
+```json
 {
   "success": false,
   "error": {
@@ -378,32 +283,41 @@ Time-series trend for charting.
     "message": "Unexpected server error"
   }
 }
+```
 
-## 6) Validation Rules (Concise)
+## 6) Validation and Reliability Rules
 - amount > 0
-- transactionDate is valid date
+- date is valid ISO date
 - startDate <= endDate
 - minAmount <= maxAmount
 - page >= 1
 - pageSize in [1, 100]
 - interval in {day, week, month}
+- role in {VIEWER, ANALYST, ADMIN}
+- status in {ACTIVE, INACTIVE}
+- inactive users cannot access protected APIs
 
-## 7) Suggested Indexes
-- transactions(transaction_date)
-- transactions(type)
-- transactions(category)
-- transactions(amount)
-- composite for common filters, e.g. (type, transaction_date)
+## 7) Persistence Note
+- Suggested for assignment: SQLite for simplicity (or PostgreSQL if preferred).
+- If mock storage is used, it must be explicitly documented in README.
 
 ## 8) Final Consolidated Route Summary
 
 | Method | Route | Roles | Request (Req) | Success Response | Error Responses | Availability |
 |---|---|---|---|---|---|---|
-| POST | /transactions | ANALYST, ADMIN | Body: type, amount, category, description?, transactionDate | 201 Created + transaction object | 400, 401, 403, 500 | Planned |
-| GET | /transactions | VIEWER, ANALYST, ADMIN | Query: type?, category?, minAmount?, maxAmount?, startDate?, endDate?, sortBy?, sortOrder?, page?, pageSize? | 200 OK + transactions[] + pagination meta | 400, 401, 500 | Planned |
-| GET | /transactions/:id | VIEWER, ANALYST, ADMIN | Path: id (UUID) | 200 OK + transaction object | 401, 404, 500 | Planned |
-| PATCH | /transactions/:id | ANALYST, ADMIN | Path: id (UUID), Body(any): type/amount/category/description/transactionDate | 200 OK + updated transaction object | 400, 401, 403, 404, 500 | Planned |
-| DELETE | /transactions/:id | ADMIN | Path: id (UUID) | 204 No Content | 401, 403, 404, 500 | Planned |
-| GET | /dashboard/summary | VIEWER, ANALYST, ADMIN | Query: startDate?, endDate?, category? | 200 OK + totalIncome/totalExpense/netBalance/transactionCount | 400, 401, 500 | Planned |
-| GET | /dashboard/category-totals | VIEWER, ANALYST, ADMIN | Query: type?, startDate?, endDate? | 200 OK + [{category, type, totalAmount, count}] | 400, 401, 500 | Planned |
-| GET | /dashboard/trends | VIEWER, ANALYST, ADMIN | Query: interval, startDate, endDate, type? | 200 OK + time-series rows [{periodStart, incomeTotal, expenseTotal, net}] | 400, 401, 500 | Planned |
+| POST | /users | ADMIN | Body: name, email, role, status? | 201 Created + user object | 400, 401, 403, 409, 500 | Planned |
+| GET | /users | ADMIN | Query: role?, status?, page?, pageSize? | 200 OK + users[] + pagination meta | 400, 401, 403, 500 | Planned |
+| GET | /users/:id | ADMIN | Path: id | 200 OK + user object | 401, 403, 404, 500 | Planned |
+| PATCH | /users/:id | ADMIN | Path: id, Body(any): name/email | 200 OK + updated user object | 400, 401, 403, 404, 409, 500 | Planned |
+| PATCH | /users/:id/role | ADMIN | Path: id, Body: role | 200 OK + role update result | 400, 401, 403, 404, 500 | Planned |
+| PATCH | /users/:id/status | ADMIN | Path: id, Body: status | 200 OK + status update result | 400, 401, 403, 404, 500 | Planned |
+| DELETE | /users/:id | ADMIN | Path: id | 204 No Content | 401, 403, 404, 500 | Planned |
+| POST | /transactions | ANALYST, ADMIN | Body: type, amount, category, date, notes? | 201 Created + transaction object | 400, 401, 403, 500 | Planned |
+| GET | /transactions | ANALYST, ADMIN | Query: type?, category?, date range, amount range, page?, pageSize? | 200 OK + transactions[] + pagination meta | 400, 401, 500 | Planned |
+| GET | /transactions/:id | ANALYST, ADMIN | Path: id | 200 OK + transaction object | 401, 404, 500 | Planned |
+| PATCH | /transactions/:id | ANALYST, ADMIN | Path: id, Body(any): type/amount/category/date/notes | 200 OK + updated transaction object | 400, 401, 403, 404, 500 | Planned |
+| DELETE | /transactions/:id | ADMIN | Path: id | 204 No Content | 401, 403, 404, 500 | Planned |
+| GET | /dashboard/summary | VIEWER, ANALYST, ADMIN | Query: startDate?, endDate?, category? | 200 OK + income/expense/net/count | 400, 401, 500 | Planned |
+| GET | /dashboard/category-totals | VIEWER, ANALYST, ADMIN | Query: type?, startDate?, endDate? | 200 OK + grouped category totals | 400, 401, 500 | Planned |
+| GET | /dashboard/recent-activity | VIEWER, ANALYST, ADMIN | Query: limit?, type? | 200 OK + recent transactions | 400, 401, 500 | Planned |
+| GET | /dashboard/trends | VIEWER, ANALYST, ADMIN | Query: interval, startDate, endDate, type? | 200 OK + trend buckets | 400, 401, 500 | Planned |
